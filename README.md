@@ -48,16 +48,16 @@ Demo of **sass-extract** using the [sass-extract-loader](https://github.com/jgra
 
 ## Installation
 ```bash
-npm install --save node-sass sass-extract
+npm install --save sass sass-extract
 ```
-*Note that the node-sass compiler have to be installed as it is a peer dependency of sass-extract.*
+*Note that the sass compiler has to be installed as it is a peer dependency of sass-extract.*
 
 ## API
-The API is deliberately kept very similar to that of `node-sass`. This is because `sass-extract` can be used as a replacement that will add variable extraction as an additional feature to compiling the sass into css.
+The API is deliberately kept very similar to that of `sass`. This is because `sass-extract` can be used as a replacement that will add variable extraction as an additional feature to compiling the sass into css.
 
 ##### render(compileOptions, extractOptions)
 
-An augmented version of the `node-sass` render function that in addition to rendering css also extract sass variables into `rendered.vars`.
+An augmented version of the `sass` render function that in addition to rendering css also extract sass variables into `rendered.vars`.
 
 See [node-sass](https://github.com/sass/node-sass) for documentation of the compileOptions object.
 
@@ -101,7 +101,7 @@ Generally you will pass the same compileOptions to both `node-sass` for renderin
 To be able to extract variables across multiple files using the `@import` directive you need to provide either `file` or `includePaths` for import lookups.
 
 ```js
-const sass = require('node-sass');
+const sass = require('sass');
 const sassExtract = require('sass-extract');
 
 const rendered = sass.renderSync({
@@ -121,7 +121,7 @@ sassExtract.extract(rendered, {
 A synchronous version of the `extract` function.
 
 ```js
-const sass = require('node-sass');
+const sass = require('sass');
 const sassExtract = require('sass-extract');
 
 const rendered = sass.renderSync({
