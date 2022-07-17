@@ -154,10 +154,8 @@ describe_implementation('basic-implicit', (sass) => {
 
   describe('async', () => {
     it('should extract all variables', () => {
-      console.log("here")
       return render({ file: basicImplicitFile }, { implementation: sass })
       .then(rendered => {
-        console.log("rendered", rendered)
         verifyBasic(rendered, basicImplicitFile, false, false);
       });
     });

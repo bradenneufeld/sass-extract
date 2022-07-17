@@ -3,6 +3,10 @@ import { loadCompiledFiles, loadCompiledFilesSync } from './load';
 import { processFiles, parseFiles } from './process';
 import { makeImporter, makeSyncImporter } from './importer';
 import { Pluggable } from './pluggable';
+import sass from "sass";
+import { pathToFileURL } from 'node:url';
+const path = require('path');
+
 
 /**
  * Get rendered stats required for extraction
@@ -42,6 +46,7 @@ function makeExtractionCompileOptions(compileOptions, entryFilename, extractions
  * Compile extracted variables per file into a complete result object
  */
 function compileExtractionResult(orderedFiles, extractions) {
+  // the extractions here should already contain global vars, but they don't for eui
   const extractedVariables = { global: {} };
 
   orderedFiles.map(filename => {
@@ -94,10 +99,42 @@ export function extract(rendered, { compileOptions = {}, extractOptions = {} } =
     const extractions = processFiles(orderedFiles, compiledFiles, parsedDeclarations, pluggable, sass);
     const importer = makeImporter(extractions, includedFiles, includedPaths, compileOptions.importer);
     const extractionCompileOptions = makeExtractionCompileOptions(compileOptions, entryFilename, extractions, importer);
+    const importer2 = {findFileUrl(url) {
+        try {
+          var newURL = new URL(url,'file:' + path.parse( entryFilename ).dir + '/');
+          return newURL;
+        }
+        catch (error) {
+          console.log(error)
+        }
+        return new URL (url);
+      }}
 
-    return sass.render(extractionCompileOptions, () => {
-      return pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions));
-    })
+    const importer3 = {
+      canonicalize(url) {
+        var extension = '';
+        if (!url.endsWith('.scss')) {
+          extension = '.scss';
+        }
+        var newURL = new URL(url + extension,'file:' + path.parse( entryFilename ).dir + '/');
+        return newURL;
+      },
+      load(canonicalUrl) {
+        return {
+          contents: extractions[canonicalUrl.pathname].injectedData,
+          syntax: 'scss'
+        };
+      }
+    }
+      return sass.compileStringAsync(extractionCompileOptions.data, {
+        functions: extractionCompileOptions.functions,
+        importers: [importer3],
+        importer: importer3
+      }).then(()=> {return (pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions)));}
+
+      );
+
+
   });
 }
 
@@ -110,14 +147,40 @@ export function extractSync(rendered, { compileOptions = {}, extractOptions = {}
   const sass = require('sass');
 
   const { entryFilename, includedFiles, includedPaths } = getRenderedStats(rendered, compileOptions);
-
   const { compiledFiles, orderedFiles } = loadCompiledFilesSync(includedFiles, entryFilename, compileOptions.data);
   const parsedDeclarations = parseFiles(compiledFiles);
+  //console.log("parsedDeclarations", parsedDeclarations)
   const extractions = processFiles(orderedFiles, compiledFiles, parsedDeclarations, pluggable, sass);
+  // should not have globals here
   const importer = makeSyncImporter(extractions, includedFiles, includedPaths, compileOptions.importer);
+  //console.log("importer", importer)
   const extractionCompileOptions = makeExtractionCompileOptions(compileOptions, entryFilename, extractions, importer);
 
-  sass.renderSync(extractionCompileOptions);
+  const importer3 = {
+    canonicalize(url) {
+      var extension = '';
+      if (!url.endsWith('.scss')) {
+        extension = '.scss';
+      }
+      var newURL = new URL(url + extension,'file:' + path.parse( entryFilename ).dir + '/');
+      return newURL;
+    },
+    load(canonicalUrl) {
+      return {
+        contents: extractions[canonicalUrl.pathname].injectedData,
+        syntax: 'scss'
+      };
+    }
+  }
+  try {
+    sass.compileString(extractionCompileOptions.data, {
+      functions: extractionCompileOptions.functions,
+      importers: [importer3],
+      importer: importer3
+    });
+  }
+  catch (e) {console.log(e)}
+
 
   return pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions));
 }
