@@ -1,3 +1,5 @@
+$global-weight-normal: null;
+
 @mixin set-some-font-weight {
   $global-weight-normal: bold !global;
 }

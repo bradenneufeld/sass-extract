@@ -119,14 +119,14 @@ function verifyVarArgs(rendered, sourceFile) {
 describe_implementation('var-args', (sass) => {
   describe('sync', () => {
     it('should extract all variables', () => {
-      const rendered = renderSync({ file: varArgsFile }, { implementation: sass });
+      const rendered = renderSync({ file: varArgsFile });
       verifyVarArgs(rendered, varArgsFile);
     });
   });
 
   describe('async', () => {
     it('should extract all variables', () => {
-      return render({ file: varArgsFile }, { implementation: sass })
+      return render({ file: varArgsFile })
       .then(rendered => {
         verifyVarArgs(rendered, varArgsFile);
       });

@@ -146,17 +146,16 @@ function verifyBasic(rendered, sourceFile, explicit, mixed, expectedEol = EOL) {
 describe_implementation('basic-implicit', (sass) => {
   describe('sync', () => {
     it('should extract all variables', () => {
-      const rendered = renderSync({ file: basicImplicitFile }, { implementation: sass })
+      const rendered = renderSync({ file: basicImplicitFile })
       verifyBasic(rendered, basicImplicitFile, false, false);
     });
   });
 
   describe('async', () => {
     it('should extract all variables', () => {
-      return render({ file: basicImplicitFile }, { implementation: sass })
-      .then(rendered => {
+      return render({ file: basicImplicitFile }, function(err, rendered) {
         verifyBasic(rendered, basicImplicitFile, false, false);
-      });
+      })
     });
   });
 });

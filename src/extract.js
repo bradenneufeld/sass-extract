@@ -1,5 +1,4 @@
-import Promise from 'bluebird';
-import { normalizePath, makeAbsolute, getSassImplementation } from './util';
+import { normalizePath, makeAbsolute } from './util';
 import { loadCompiledFiles, loadCompiledFilesSync } from './load';
 import { processFiles, parseFiles } from './process';
 import { makeImporter, makeSyncImporter } from './importer';
@@ -85,7 +84,7 @@ function compileExtractionResult(orderedFiles, extractions) {
  */
 export function extract(rendered, { compileOptions = {}, extractOptions = {} } = {}) {
   const pluggable = new Pluggable(extractOptions.plugins).init();
-  const sass = Promise.promisifyAll(getSassImplementation(extractOptions));
+  const sass = require('sass');
 
   const { entryFilename, includedFiles, includedPaths } = getRenderedStats(rendered, compileOptions);
 
@@ -96,10 +95,9 @@ export function extract(rendered, { compileOptions = {}, extractOptions = {} } =
     const importer = makeImporter(extractions, includedFiles, includedPaths, compileOptions.importer);
     const extractionCompileOptions = makeExtractionCompileOptions(compileOptions, entryFilename, extractions, importer);
 
-    return sass.renderAsync(extractionCompileOptions)
-    .then(() => {
+    return sass.render(extractionCompileOptions, () => {
       return pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions));
-    });
+    })
   });
 }
 
@@ -109,7 +107,7 @@ export function extract(rendered, { compileOptions = {}, extractOptions = {} } =
  */
 export function extractSync(rendered, { compileOptions = {}, extractOptions = {} } = {}) {
   const pluggable = new Pluggable(extractOptions.plugins).init();
-  const sass = getSassImplementation(extractOptions);
+  const sass = require('sass');
 
   const { entryFilename, includedFiles, includedPaths } = getRenderedStats(rendered, compileOptions);
 

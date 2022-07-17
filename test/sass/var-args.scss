@@ -10,6 +10,8 @@
   @return nth($stuff, $n);
 }
 
+$echoedMixin: null;
+
 @mixin echoMixin($vars...) {
   $echoedMixin: $vars !global;
 }
