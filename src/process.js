@@ -36,6 +36,8 @@ function processFile(idx, count, filename, data, parsedDeclarations, pluggable, 
   const variables = { global: {} };
 
   const globalDeclarationResultHandler = (declaration, value, sassValue) => {
+    console.log("!!!!globalDeclarationResultHandler", value)
+    console.log("!!!!sassValue", sassValue)
     if(!variables.global[declaration.declaration]) {
       variables.global[declaration.declaration] = [];
     }
