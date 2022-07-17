@@ -9,7 +9,7 @@ import { Pluggable } from './pluggable';
  */
 function getRenderedStats(rendered, compileOptions) {
   return {
-    entryFilename: normalizePath(rendered.stats.entry),
+    entryFilename: normalizePath(makeAbsolute(rendered.stats.entry)),
     includedFiles: rendered.stats.includedFiles.map(f => normalizePath(makeAbsolute(f))),
     includedPaths: (compileOptions.includePaths || []).map(normalizePath),
   };
@@ -30,6 +30,8 @@ function makeExtractionCompileOptions(compileOptions, entryFilename, extractions
   });
 
   extractionCompileOptions.functions = Object.assign(extractionFunctions, compileOptions.functions);
+  console.log("extractions", extractions)
+  console.log("entryFilename", entryFilename)
   extractionCompileOptions.data = extractions[entryFilename].injectedData;
   if(!makeExtractionCompileOptions.imported) {
     extractionCompileOptions.importer = importer;
