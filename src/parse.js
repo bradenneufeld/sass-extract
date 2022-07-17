@@ -144,7 +144,7 @@ function parseDeclaration($ast, declaration, scope) {
  * Parse variable declarations from a chunk of sass source
  */
 export function parseDeclarations(data) {
-  const ast = JSON.parse(gonzales.parse(data, {syntax: 'scss'}).toJson());
+  const ast = JSON.parse(gonzales.parse(data, {syntax: 'sass'}).toJson());
 
   let options = {
     hasChildren: (node) => Array.isArray(node.content),
