@@ -120,10 +120,39 @@ export function extract(rendered, { compileOptions = {}, extractOptions = {} } =
         return newURL;
       },
       load(canonicalUrl) {
-        return {
-          contents: extractions[canonicalUrl.pathname].injectedData,
-          syntax: 'scss'
-        };
+        var contents = '';
+        try {
+          contents = extractions[canonicalUrl.pathname].injectedData;
+          return {
+            contents: extractions[canonicalUrl.pathname].injectedData,
+            syntax: 'scss'
+          };
+        }
+        catch(error) {
+          try {
+            var path = canonicalUrl.pathname.split('/');
+            path.splice(-1, 1, '_' + path.slice(-1)[0]);
+            var newpath = path.join('/');
+            return {
+              contents: extractions[newpath].injectedData,
+              syntax: 'scss'
+            };
+          }
+          catch(error) {
+            var path = canonicalUrl.pathname.split('/');
+            var file = path.slice(-1)[0];
+            for (const filePath of includedFiles) {
+              if (filePath.endsWith(file)) {
+                return {
+                  contents: extractions[filePath].injectedData,
+                  syntax: 'scss'
+                };
+              }
+            }
+
+          }
+        }
+        return null;
       }
     }
       return sass.compileStringAsync(extractionCompileOptions.data, {
@@ -158,6 +187,7 @@ export function extractSync(rendered, { compileOptions = {}, extractOptions = {}
 
   const importer3 = {
     canonicalize(url) {
+
       var extension = '';
       if (!url.endsWith('.scss')) {
         extension = '.scss';
@@ -166,10 +196,39 @@ export function extractSync(rendered, { compileOptions = {}, extractOptions = {}
       return newURL;
     },
     load(canonicalUrl) {
-      return {
-        contents: extractions[canonicalUrl.pathname].injectedData,
-        syntax: 'scss'
-      };
+      var contents = '';
+      try {
+        contents = extractions[canonicalUrl.pathname].injectedData;
+        return {
+          contents: extractions[canonicalUrl.pathname].injectedData,
+          syntax: 'scss'
+        };
+      }
+      catch(error) {
+        try {
+          var path = canonicalUrl.pathname.split('/');
+          path.splice(-1, 1, '_' + path.slice(-1)[0]);
+          var newpath = path.join('/');
+          return {
+            contents: extractions[newpath].injectedData,
+            syntax: 'scss'
+          };
+        }
+        catch(error) {
+          var path = canonicalUrl.pathname.split('/');
+          var file = path.slice(-1)[0];
+          for (const filePath of includedFiles) {
+            if (filePath.endsWith(file)) {
+              return {
+                contents: extractions[filePath].injectedData,
+                syntax: 'scss'
+              };
+            }
+          }
+        }
+      }
+      return null;
+
     }
   }
   try {
