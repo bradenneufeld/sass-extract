@@ -1,5 +1,14 @@
 $someDefault: 'default-val';
 
+$mixin1: null;
+$mixin2: null;
+$mixin3: null;
+$function1: null;
+$function2: null;
+$function3: null;
+$someGlobalSetOnInvoke1: null;
+$someGlobalSetOnInvoke2: null;
+
 @mixin mixin1 {
   $mixin1: 'm-variable-1' !global;
 }

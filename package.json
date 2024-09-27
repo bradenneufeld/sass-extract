@@ -13,8 +13,8 @@
     "watch": "mocha --watch --reporter min --require babel-core/register --timeout 10000",
     "watch:fast": "FAST_TEST=true mocha --watch --reporter min --require babel-core/register"
   },
-  "repository": "jgranstrom/sass-extract",
-  "author": "John Granström <granstrom.john@gmail.com>",
+  "repository": "bradenneufeld/sass-extract",
+  "author": "Braden Neufeld <bradenneufeld@gmail.com>",
   "keywords": [
     "sass",
     "scss",
@@ -29,11 +29,9 @@
     "node": ">=4"
   },
   "peerDependencies": {
-    "node-sass": "^3.8.0 || 4",
     "sass": "^1"
   },
   "dependencies": {
-    "bluebird": "^3.7.2",
     "gonzales-pe": "^4.2.4",
     "parse-color": "^1.0.0",
     "query-ast": "^1.0.2"
@@ -45,7 +43,7 @@
     "chai": "^4.2.0",
     "chai-subset": "^1.6.0",
     "cz-conventional-changelog": "^3.1.0",
-    "foundation-sites": "6.4.3",
+    "foundation-sites": "^6.7.5",
     "mocha": "^7.0.1"
   },
   "config": {

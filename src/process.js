@@ -10,6 +10,7 @@ function getFileId(filename) {
 }
 
 function parseFile(filename, data) {
+  //console.log("parseFile", data)
   return parseDeclarations(data);
 }
 
@@ -36,6 +37,8 @@ function processFile(idx, count, filename, data, parsedDeclarations, pluggable, 
   const variables = { global: {} };
 
   const globalDeclarationResultHandler = (declaration, value, sassValue) => {
+    //console.log("globalDeclarationResultHandler");
+    //console.trace();
     if(!variables.global[declaration.declaration]) {
       variables.global[declaration.declaration] = [];
     }
@@ -45,6 +48,7 @@ function processFile(idx, count, filename, data, parsedDeclarations, pluggable, 
 
   const fileId = getFileId(filename);
   const injection = injectExtractionFunctions(fileId, declarations, dependentDeclarations, { globalDeclarationResultHandler }, sass);
+  //console.log("OBJECTION", injection);
   const injectedData = `${data}\n\n${injection.injectedData}`;
   const injectedFunctions = injection.injectedFunctions;
 
@@ -58,16 +62,20 @@ function processFile(idx, count, filename, data, parsedDeclarations, pluggable, 
 }
 
 export function parseFiles(files) {
+  //console.log("parseFiles")
   const parsedDeclarations = {
     files: {},
     dependentDeclarations: [],
   };
 
   Object.keys(files).map(filename => {
+    //console.log("filename", filename)
     const fileDeclarations = parseFile(filename, files[filename]);
+    //console.log("parseFile", fileDeclarations)
     parsedDeclarations.files[filename] = fileDeclarations;
     parsedDeclarations.dependentDeclarations.push(...getDependentDeclarations(filename, fileDeclarations))
   });
+  //console.log("OBJECYSK")
 
   return parsedDeclarations;
 }

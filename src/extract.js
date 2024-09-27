@@ -1,16 +1,19 @@
-import Promise from 'bluebird';
-import { normalizePath, makeAbsolute, getSassImplementation } from './util';
+import { normalizePath, makeAbsolute } from './util';
 import { loadCompiledFiles, loadCompiledFilesSync } from './load';
 import { processFiles, parseFiles } from './process';
 import { makeImporter, makeSyncImporter } from './importer';
 import { Pluggable } from './pluggable';
+import sass from "sass";
+import { pathToFileURL } from 'node:url';
+const path = require('path');
+
 
 /**
  * Get rendered stats required for extraction
  */
 function getRenderedStats(rendered, compileOptions) {
   return {
-    entryFilename: normalizePath(rendered.stats.entry),
+    entryFilename: normalizePath(makeAbsolute(rendered.stats.entry)),
     includedFiles: rendered.stats.includedFiles.map(f => normalizePath(makeAbsolute(f))),
     includedPaths: (compileOptions.includePaths || []).map(normalizePath),
   };
@@ -43,6 +46,7 @@ function makeExtractionCompileOptions(compileOptions, entryFilename, extractions
  * Compile extracted variables per file into a complete result object
  */
 function compileExtractionResult(orderedFiles, extractions) {
+  // the extractions here should already contain global vars, but they don't for eui
   const extractedVariables = { global: {} };
 
   orderedFiles.map(filename => {
@@ -85,7 +89,7 @@ function compileExtractionResult(orderedFiles, extractions) {
  */
 export function extract(rendered, { compileOptions = {}, extractOptions = {} } = {}) {
   const pluggable = new Pluggable(extractOptions.plugins).init();
-  const sass = Promise.promisifyAll(getSassImplementation(extractOptions));
+  const sass = require('sass');
 
   const { entryFilename, includedFiles, includedPaths } = getRenderedStats(rendered, compileOptions);
 
@@ -95,11 +99,71 @@ export function extract(rendered, { compileOptions = {}, extractOptions = {} } =
     const extractions = processFiles(orderedFiles, compiledFiles, parsedDeclarations, pluggable, sass);
     const importer = makeImporter(extractions, includedFiles, includedPaths, compileOptions.importer);
     const extractionCompileOptions = makeExtractionCompileOptions(compileOptions, entryFilename, extractions, importer);
+    const importer2 = {findFileUrl(url) {
+        try {
+          var newURL = new URL(url,'file:' + path.parse( entryFilename ).dir + '/');
+          return newURL;
+        }
+        catch (error) {
+          console.log(error)
+        }
+        return new URL (url);
+      }}
 
-    return sass.renderAsync(extractionCompileOptions)
-    .then(() => {
-      return pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions));
-    });
+    const importer3 = {
+      canonicalize(url) {
+        var extension = '';
+        if (!url.endsWith('.scss')) {
+          extension = '.scss';
+        }
+        var newURL = new URL(url + extension,'file:' + path.parse( entryFilename ).dir + '/');
+        return newURL;
+      },
+      load(canonicalUrl) {
+        var contents = '';
+        try {
+          contents = extractions[canonicalUrl.pathname].injectedData;
+          return {
+            contents: extractions[canonicalUrl.pathname].injectedData,
+            syntax: 'scss'
+          };
+        }
+        catch(error) {
+          try {
+            var path = canonicalUrl.pathname.split('/');
+            path.splice(-1, 1, '_' + path.slice(-1)[0]);
+            var newpath = path.join('/');
+            return {
+              contents: extractions[newpath].injectedData,
+              syntax: 'scss'
+            };
+          }
+          catch(error) {
+            var path = canonicalUrl.pathname.split('/');
+            var file = path.slice(-1)[0];
+            for (const filePath of includedFiles) {
+              if (filePath.endsWith(file)) {
+                return {
+                  contents: extractions[filePath].injectedData,
+                  syntax: 'scss'
+                };
+              }
+            }
+
+          }
+        }
+        return null;
+      }
+    }
+      return sass.compileStringAsync(extractionCompileOptions.data, {
+        functions: extractionCompileOptions.functions,
+        importers: [importer3],
+        importer: importer3
+      }).then(()=> {return (pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions)));}
+
+      );
+
+
   });
 }
 
@@ -109,17 +173,73 @@ export function extract(rendered, { compileOptions = {}, extractOptions = {} } =
  */
 export function extractSync(rendered, { compileOptions = {}, extractOptions = {} } = {}) {
   const pluggable = new Pluggable(extractOptions.plugins).init();
-  const sass = getSassImplementation(extractOptions);
+  const sass = require('sass');
 
   const { entryFilename, includedFiles, includedPaths } = getRenderedStats(rendered, compileOptions);
-
   const { compiledFiles, orderedFiles } = loadCompiledFilesSync(includedFiles, entryFilename, compileOptions.data);
   const parsedDeclarations = parseFiles(compiledFiles);
+  //console.log("parsedDeclarations", parsedDeclarations)
   const extractions = processFiles(orderedFiles, compiledFiles, parsedDeclarations, pluggable, sass);
+  // should not have globals here
   const importer = makeSyncImporter(extractions, includedFiles, includedPaths, compileOptions.importer);
+  //console.log("importer", importer)
   const extractionCompileOptions = makeExtractionCompileOptions(compileOptions, entryFilename, extractions, importer);
 
-  sass.renderSync(extractionCompileOptions);
+  const importer3 = {
+    canonicalize(url) {
+
+      var extension = '';
+      if (!url.endsWith('.scss')) {
+        extension = '.scss';
+      }
+      var newURL = new URL(url + extension,'file:' + path.parse( entryFilename ).dir + '/');
+      return newURL;
+    },
+    load(canonicalUrl) {
+      var contents = '';
+      try {
+        contents = extractions[canonicalUrl.pathname].injectedData;
+        return {
+          contents: extractions[canonicalUrl.pathname].injectedData,
+          syntax: 'scss'
+        };
+      }
+      catch(error) {
+        try {
+          var path = canonicalUrl.pathname.split('/');
+          path.splice(-1, 1, '_' + path.slice(-1)[0]);
+          var newpath = path.join('/');
+          return {
+            contents: extractions[newpath].injectedData,
+            syntax: 'scss'
+          };
+        }
+        catch(error) {
+          var path = canonicalUrl.pathname.split('/');
+          var file = path.slice(-1)[0];
+          for (const filePath of includedFiles) {
+            if (filePath.endsWith(file)) {
+              return {
+                contents: extractions[filePath].injectedData,
+                syntax: 'scss'
+              };
+            }
+          }
+        }
+      }
+      return null;
+
+    }
+  }
+  try {
+    sass.compileString(extractionCompileOptions.data, {
+      functions: extractionCompileOptions.functions,
+      importers: [importer3],
+      importer: importer3
+    });
+  }
+  catch (e) {console.log(e)}
+
 
   return pluggable.run(Pluggable.POST_EXTRACT, compileExtractionResult(orderedFiles, extractions));
 }
